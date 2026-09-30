@@ -1,0 +1,28 @@
+# Secrets
+.env
+**/.env
+.env.*
+**/.env.*
+
+# Java / Maven
+target/
+**/target/
+
+# IDE
+.vscode/
+**/.vscode/
+.idea/
+**/.idea/
+*.iml
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
