@@ -1,5 +1,6 @@
 package com.ridelink.fare_payment_service.service.impl;
 
+import com.ridelink.fare_payment_service.client.RideServiceClient;
 import com.ridelink.fare_payment_service.dto.CreatePaymentRequest;
 import com.ridelink.fare_payment_service.dto.PaymentResponse;
 import com.ridelink.fare_payment_service.exception.DuplicatePaymentException;
@@ -23,10 +24,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final FareRepository fareRepository;
+    private final RideServiceClient rideServiceClient;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, FareRepository fareRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+                              FareRepository fareRepository,
+                              RideServiceClient rideServiceClient) {
         this.paymentRepository = paymentRepository;
         this.fareRepository = fareRepository;
+        this.rideServiceClient = rideServiceClient;
     }
 
     @Override
@@ -61,7 +66,17 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         Payment savedPayment = paymentRepository.save(payment);
-        return mapToPaymentResponse(savedPayment);
+
+        // Sync with Ride Management Service (resilient - continues smoothly even if offline)
+        boolean synced = rideServiceClient.notifyPaymentCompleted(
+                request.getRideId(),
+                savedPayment.getId(),
+                savedPayment.getAmount()
+        );
+
+        PaymentResponse response = mapToPaymentResponse(savedPayment);
+        response.setRideSynced(synced);
+        return response;
     }
 
     @Override
@@ -84,9 +99,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .rideId(payment.getRideId())
                 .fareId(payment.getFareId())
                 .amount(payment.getAmount())
+                .currency("LKR")
                 .paymentMethod(payment.getPaymentMethod())
                 .paymentStatus(payment.getPaymentStatus())
                 .transactionReference(payment.getTransactionReference())
+                .rideSynced(false)
                 .createdAt(payment.getCreatedAt())
                 .paidAt(payment.getPaidAt())
                 .build();

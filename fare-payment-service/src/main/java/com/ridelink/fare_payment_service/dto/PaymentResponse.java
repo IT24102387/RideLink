@@ -19,9 +19,11 @@ public class PaymentResponse {
     private String rideId;
     private String fareId;
     private Double amount;
+    private String currency;
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private String transactionReference;
+    private Boolean rideSynced;
     private LocalDateTime createdAt;
     private LocalDateTime paidAt;
 }

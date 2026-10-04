@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FareEstimateRequest {
+public class CalculateFareRequest {
 
     private String rideId;
 
@@ -26,12 +26,4 @@ public class FareEstimateRequest {
     private String vehicleType;
 
     private Double surgeMultiplier;
-
-    public FareEstimateRequest(String rideId, Double distanceKm, Double durationMinutes) {
-        this.rideId = rideId;
-        this.distanceKm = distanceKm;
-        this.durationMinutes = durationMinutes;
-        this.vehicleType = "CAR";
-        this.surgeMultiplier = 1.0;
-    }
 }

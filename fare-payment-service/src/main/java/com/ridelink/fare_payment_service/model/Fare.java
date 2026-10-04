@@ -21,11 +21,14 @@ public class Fare {
     private String rideId;
     private Double distanceKm;
     private Double durationMinutes;
+    private String vehicleType;
+    private Double surgeMultiplier;
     private Double baseFare;
     private Double distanceFare;
     private Double timeFare;
     private Double estimatedFare;
     private Double finalFare;
+    private String currency;
     private FareStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

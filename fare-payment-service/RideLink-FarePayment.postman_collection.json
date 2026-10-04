@@ -1,16 +1,75 @@
 {
   "info": {
     "_postman_id": "ridelink-fare-payment-service-collection",
-    "name": "RideLink - Fare & Payment Service",
-    "description": "Collection of APIs for Fare Estimation, Finalization, and Payment Processing in RideLink Microservices.",
+    "name": "RideLink - Fare & Payment Service (Inter-Service Connected)",
+    "description": "Collection of APIs for Fare Estimation, Breakdown Calculation, Finalization, Payments, and Microservices Inter-connectivity in RideLink platform.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
+      "name": "Integration & Peer Microservices",
+      "item": [
+        {
+          "name": "1. Check Microservices Connectivity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/v1/integration/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "v1", "integration", "status"]
+            },
+            "description": "Checks connectivity with MongoDB Atlas, Ride Management Service (8082), Account Service (8080), and Driver Service (8081)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Simulate Complete End-to-End Flow",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/v1/integration/simulate-complete-flow?vehicleType=CAR&distanceKm=12.5&durationMinutes=25.0&surgeMultiplier=1.0",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "v1", "integration", "simulate-complete-flow"],
+              "query": [
+                { "key": "vehicleType", "value": "CAR" },
+                { "key": "distanceKm", "value": "12.5" },
+                { "key": "durationMinutes", "value": "25.0" },
+                { "key": "surgeMultiplier", "value": "1.0" }
+              ]
+            },
+            "description": "Runs a full cycle test: Fare estimation -> Final calculation -> Payment processing -> Ride notification."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Fetch Ride Details from Ride Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/v1/integration/rides/ride-101",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "v1", "integration", "rides", "ride-101"]
+            },
+            "description": "Tests inter-service client call from fare-payment-service to ride-management-service."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Fare APIs",
       "item": [
         {
-          "name": "1. Estimate Fare",
+          "name": "1. Estimate Fare (Pre-Ride / Peer Service Call)",
           "request": {
             "method": "POST",
             "header": [
@@ -21,50 +80,74 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"distanceKm\": 10.5,\n  \"durationMinutes\": 20.0\n}"
+              "raw": "{\n  \"distanceKm\": 10.5,\n  \"durationMinutes\": 20.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
             },
             "url": {
-              "raw": "http://localhost:8084/api/fares/estimate",
+              "raw": "http://localhost:8084/api/v1/fares/estimate",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "fares", "estimate"]
+              "path": ["api", "v1", "fares", "estimate"]
             }
           },
           "response": []
         },
         {
-          "name": "2. Get Fare By Fare ID",
+          "name": "2. Calculate Final Fare (Called by Ride Management Service)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"distanceKm\": 12.0,\n  \"durationMinutes\": 25.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8084/api/v1/fares/calculate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "v1", "fares", "calculate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Fare By Fare ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/fares/{{fareId}}",
+              "raw": "http://localhost:8084/api/v1/fares/{{fareId}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "fares", "{{fareId}}"]
+              "path": ["api", "v1", "fares", "{{fareId}}"]
             }
           },
           "response": []
         },
         {
-          "name": "3. Get Fare By Ride ID",
+          "name": "4. Get Fare By Ride ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/fares/ride/ride-101",
+              "raw": "http://localhost:8084/api/v1/fares/ride/ride-101",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "fares", "ride", "ride-101"]
+              "path": ["api", "v1", "fares", "ride", "ride-101"]
             }
           },
           "response": []
         },
         {
-          "name": "4. Finalize Fare",
+          "name": "5. Finalize Fare",
           "request": {
             "method": "POST",
             "header": [
@@ -78,11 +161,11 @@
               "raw": "{\n  \"distanceKm\": 12.0,\n  \"durationMinutes\": 25.0\n}"
             },
             "url": {
-              "raw": "http://localhost:8084/api/fares/{{fareId}}/finalize",
+              "raw": "http://localhost:8084/api/v1/fares/{{fareId}}/finalize",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "fares", "{{fareId}}", "finalize"]
+              "path": ["api", "v1", "fares", "{{fareId}}", "finalize"]
             }
           },
           "response": []
@@ -93,7 +176,7 @@
       "name": "Payment APIs",
       "item": [
         {
-          "name": "5. Create Payment (CASH or CARD)",
+          "name": "1. Create Payment (Syncs with Ride Service)",
           "request": {
             "method": "POST",
             "header": [
@@ -104,49 +187,59 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"fareId\": \"{{fareId}}\",\n  \"paymentMethod\": \"CASH\"\n}"
+              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"fareId\": \"{{fareId}}\",\n  \"paymentMethod\": \"CARD\"\n}"
             },
             "url": {
-              "raw": "http://localhost:8084/api/payments",
+              "raw": "http://localhost:8084/api/v1/payments",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "payments"]
+              "path": ["api", "v1", "payments"]
             }
           },
           "response": []
         },
         {
-          "name": "6. Get Payment By Payment ID",
+          "name": "2. Get Payment By ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/payments/{{paymentId}}",
+              "raw": "http://localhost:8084/api/v1/payments/{{paymentId}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "payments", "{{paymentId}}"]
+              "path": ["api", "v1", "payments", "{{paymentId}}"]
             }
           },
           "response": []
         },
         {
-          "name": "7. Get Payment By Ride ID",
+          "name": "3. Get Payment By Ride ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/payments/ride/ride-101",
+              "raw": "http://localhost:8084/api/v1/payments/ride/ride-101",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "payments", "ride", "ride-101"]
+              "path": ["api", "v1", "payments", "ride", "ride-101"]
             }
           },
           "response": []
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "fareId",
+      "value": "6ac2223c60292fa10836f028"
+    },
+    {
+      "key": "paymentId",
+      "value": ""
     }
   ]
 }
