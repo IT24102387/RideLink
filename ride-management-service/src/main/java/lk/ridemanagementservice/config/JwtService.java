@@ -15,6 +15,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class JwtService {
 
@@ -26,11 +29,17 @@ public class JwtService {
     private long expirationMs;
 
     private SecretKey getSigningKey() {
+        // Match account-service: use raw UTF-8 bytes if at least 32 bytes
+        byte[] utf8Bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (utf8Bytes.length >= 32) {
+            return Keys.hmacShaKeyFor(utf8Bytes);
+        }
+
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secret);
         } catch (Exception e) {
-            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+            keyBytes = utf8Bytes;
         }
 
         if (keyBytes.length < 32) {
@@ -67,8 +76,10 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            return !claims.getExpiration().before(new Date());
+            Date expiration = claims.getExpiration();
+            return expiration == null || !expiration.before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
             return false;
         }
     }
