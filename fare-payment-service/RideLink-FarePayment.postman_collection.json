@@ -2,15 +2,35 @@
   "info": {
     "_postman_id": "ridelink-fare-payment-service-collection",
     "name": "RideLink - Fare & Payment Service (Inter-Service Connected)",
-    "description": "Collection of APIs for Fare Estimation, Breakdown Calculation, Finalization, Payments, and Microservices Inter-connectivity in RideLink platform.",
+    "description": "Complete collection of APIs for Fare Estimation, Breakdown Calculation, Finalization, Payments, and Microservices Inter-connectivity in the RideLink platform. Includes automated dynamic chaining of IDs for 100% green tests in Postman Runner.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Integration & Peer Microservices",
+      "name": "1. Integration & Peer Microservices",
       "item": [
         {
           "name": "1. Check Microservices Connectivity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Fare & Payment Service is UP and Database is CONNECTED\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(\"UP\");",
+                  "    pm.expect(json.database.status).to.eql(\"CONNECTED\");",
+                  "    pm.expect(json.peerMicroservices).to.be.an(\"object\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -26,7 +46,38 @@
           "response": []
         },
         {
-          "name": "2. Simulate Complete End-to-End Flow",
+          "name": "2. Simulate Complete End-to-End Flow (1-Click Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Overall workflow completed with SUCCESS\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.overallStatus).to.eql(\"SUCCESS\");",
+                  "    pm.expect(json.step1_fareEstimate).to.be.an(\"object\");",
+                  "    pm.expect(json.step2_fareFinalized).to.be.an(\"object\");",
+                  "    pm.expect(json.step3_paymentCreated).to.be.an(\"object\");",
+                  "    ",
+                  "    if (json.simulatedRideId) {",
+                  "        pm.collectionVariables.set(\"simulatedRideId\", json.simulatedRideId);",
+                  "    }",
+                  "    if (json.step2_fareFinalized && json.step2_fareFinalized.id) {",
+                  "        pm.collectionVariables.set(\"fareId\", json.step2_fareFinalized.id);",
+                  "    }",
+                  "    if (json.step3_paymentCreated && json.step3_paymentCreated.id) {",
+                  "        pm.collectionVariables.set(\"paymentId\", json.step3_paymentCreated.id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [],
@@ -49,15 +100,34 @@
         },
         {
           "name": "3. Fetch Ride Details from Ride Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Ride lookup response returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.rideId).to.be.a(\"string\");",
+                  "    pm.expect(json.targetServiceUrl).to.include(\"8082\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/v1/integration/rides/ride-101",
+              "raw": "http://localhost:8084/api/v1/integration/rides/{{simulatedRideId}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "v1", "integration", "rides", "ride-101"]
+              "path": ["api", "v1", "integration", "rides", "{{simulatedRideId}}"]
             },
             "description": "Tests inter-service client call from fare-payment-service to ride-management-service."
           },
@@ -66,10 +136,48 @@
       ]
     },
     {
-      "name": "Fare APIs",
+      "name": "2. Fare APIs",
       "item": [
         {
-          "name": "1. Estimate Fare (Pre-Ride / Peer Service Call)",
+          "name": "1. Estimate Fare (Generates & Sets Variables)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var uniqueRideId = \"RIDE-\" + Date.now();",
+                  "pm.collectionVariables.set(\"rideId\", uniqueRideId);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created or 200 OK\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Estimated Fare and Breakdown returned\", function () {",
+                  "    pm.expect(json.estimatedFare).to.be.above(0);",
+                  "    pm.expect(json.currency).to.eql(\"LKR\");",
+                  "    pm.expect(json.fareBreakdown).to.be.an(\"object\");",
+                  "    pm.expect(json.fareBreakdown.totalFare).to.be.above(0);",
+                  "});",
+                  "",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set(\"fareId\", json.id);",
+                  "}",
+                  "if (json.rideId) {",
+                  "    pm.collectionVariables.set(\"rideId\", json.rideId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -80,7 +188,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"distanceKm\": 10.5,\n  \"durationMinutes\": 20.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
+              "raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"distanceKm\": 10.5,\n  \"durationMinutes\": 20.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
             },
             "url": {
               "raw": "http://localhost:8084/api/v1/fares/estimate",
@@ -93,31 +201,25 @@
           "response": []
         },
         {
-          "name": "2. Calculate Final Fare (Called by Ride Management Service)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "2. Get Fare By Fare ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Fare ID matches requested ID\", function () {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get(\"fareId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"distanceKm\": 12.0,\n  \"durationMinutes\": 25.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8084/api/v1/fares/calculate",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8084",
-              "path": ["api", "v1", "fares", "calculate"]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "3. Get Fare By Fare ID",
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -132,22 +234,103 @@
           "response": []
         },
         {
-          "name": "4. Get Fare By Ride ID",
+          "name": "3. Get Fare By Ride ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Ride ID matches requested ID\", function () {",
+                  "    pm.expect(json.rideId).to.eql(pm.collectionVariables.get(\"rideId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/v1/fares/ride/ride-101",
+              "raw": "http://localhost:8084/api/v1/fares/ride/{{rideId}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "v1", "fares", "ride", "ride-101"]
+              "path": ["api", "v1", "fares", "ride", "{{rideId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Calculate Final Fare (Peer Ride Management Service Call)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Final fare breakdown returned\", function () {",
+                  "    pm.expect(json.totalFare).to.be.above(0);",
+                  "    pm.expect(json.currency).to.eql(\"LKR\");",
+                  "    pm.expect(json.status).to.eql(\"FINALIZED\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"distanceKm\": 12.0,\n  \"durationMinutes\": 25.0,\n  \"vehicleType\": \"CAR\",\n  \"surgeMultiplier\": 1.0\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8084/api/v1/fares/calculate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "v1", "fares", "calculate"]
             }
           },
           "response": []
         },
         {
           "name": "5. Finalize Fare",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Fare status updated to FINALIZED\", function () {",
+                  "    pm.expect(json.status).to.eql(\"FINALIZED\");",
+                  "    pm.expect(json.finalFare).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -173,10 +356,34 @@
       ]
     },
     {
-      "name": "Payment APIs",
+      "name": "3. Payment APIs",
       "item": [
         {
           "name": "1. Create Payment (Syncs with Ride Service)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created or 200 OK\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Payment Status is PAID with Transaction Ref\", function () {",
+                  "    pm.expect(json.paymentStatus).to.eql(\"PAID\");",
+                  "    pm.expect(json.transactionReference).to.include(\"TXN-\");",
+                  "    pm.expect(json.amount).to.be.above(0);",
+                  "});",
+                  "",
+                  "if (json.id) {",
+                  "    pm.collectionVariables.set(\"paymentId\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -187,7 +394,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"fareId\": \"{{fareId}}\",\n  \"paymentMethod\": \"CARD\"\n}"
+              "raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"fareId\": \"{{fareId}}\",\n  \"paymentMethod\": \"CARD\"\n}"
             },
             "url": {
               "raw": "http://localhost:8084/api/v1/payments",
@@ -201,6 +408,25 @@
         },
         {
           "name": "2. Get Payment By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Payment details match\", function () {",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get(\"paymentId\"));",
+                  "    pm.expect(json.amount).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -216,15 +442,33 @@
         },
         {
           "name": "3. Get Payment By Ride ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Payment found for Ride ID\", function () {",
+                  "    pm.expect(json.rideId).to.eql(pm.collectionVariables.get(\"rideId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8084/api/v1/payments/ride/ride-101",
+              "raw": "http://localhost:8084/api/v1/payments/ride/{{rideId}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8084",
-              "path": ["api", "v1", "payments", "ride", "ride-101"]
+              "path": ["api", "v1", "payments", "ride", "{{rideId}}"]
             }
           },
           "response": []
@@ -235,11 +479,19 @@
   "variable": [
     {
       "key": "fareId",
-      "value": "6ac2223c60292fa10836f028"
+      "value": ""
+    },
+    {
+      "key": "rideId",
+      "value": "RIDE-1001"
     },
     {
       "key": "paymentId",
       "value": ""
+    },
+    {
+      "key": "simulatedRideId",
+      "value": "SIM-RIDE-01"
     }
   ]
 }

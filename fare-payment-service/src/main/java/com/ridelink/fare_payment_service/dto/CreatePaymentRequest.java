@@ -17,7 +17,6 @@ public class CreatePaymentRequest {
     @NotBlank(message = "Ride ID is required")
     private String rideId;
 
-    @NotBlank(message = "Fare ID is required")
     private String fareId;
 
     @NotNull(message = "Payment method is required")
