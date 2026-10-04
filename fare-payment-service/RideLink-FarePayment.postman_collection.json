@@ -1,0 +1,152 @@
+{
+  "info": {
+    "_postman_id": "ridelink-fare-payment-service-collection",
+    "name": "RideLink - Fare & Payment Service",
+    "description": "Collection of APIs for Fare Estimation, Finalization, and Payment Processing in RideLink Microservices.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Fare APIs",
+      "item": [
+        {
+          "name": "1. Estimate Fare",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"distanceKm\": 10.5,\n  \"durationMinutes\": 20.0\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8084/api/fares/estimate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "fares", "estimate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Fare By Fare ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/fares/{{fareId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "fares", "{{fareId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Fare By Ride ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/fares/ride/ride-101",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "fares", "ride", "ride-101"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Finalize Fare",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"distanceKm\": 12.0,\n  \"durationMinutes\": 25.0\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8084/api/fares/{{fareId}}/finalize",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "fares", "{{fareId}}", "finalize"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment APIs",
+      "item": [
+        {
+          "name": "5. Create Payment (CASH or CARD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rideId\": \"ride-101\",\n  \"fareId\": \"{{fareId}}\",\n  \"paymentMethod\": \"CASH\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8084/api/payments",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "payments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Get Payment By Payment ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/payments/{{paymentId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "payments", "{{paymentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7. Get Payment By Ride ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8084/api/payments/ride/ride-101",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8084",
+              "path": ["api", "payments", "ride", "ride-101"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
