@@ -16,7 +16,7 @@ import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory;
 @EnableMongoAuditing
 public class MongoConfig {
 
-    @Value("${spring.data.mongodb.uri:mongodb://localhost:27017/yamu_driver_db}")
+    @Value("${spring.data.mongodb.uri}")
     private String mongoUri;
 
     @Bean
@@ -34,7 +34,7 @@ public class MongoConfig {
     public MongoDatabaseFactory mongoDatabaseFactory(MongoClient mongoClient) {
         String database = new ConnectionString(mongoUri).getDatabase();
         if (database == null || database.isBlank()) {
-            database = "yamu_driver_db";
+            database = "driver_db";
         }
         return new SimpleMongoClientDatabaseFactory(mongoClient, database);
     }
